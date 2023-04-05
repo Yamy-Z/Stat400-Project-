@@ -25,8 +25,25 @@ fertil2 <- read_csv("data.csv")
 # Parameter fine-tuning
 This data was obtained by James Heakins, a former MSU undergraduate, for a project.  The original data comes from Botswana's 1988 Demographic and Health Survey. 
 
-The response variable/parameter of interest is 'children', the number of living children.  We want to estimate 'children' by 
-```{r}
+The response variable/parameter of interest is 'children', the number of living children.  We are trying to predict the number of living children using the explanatory variables 'age', 'urban', 'educ', and 'usemeth', and whether this is an effective model of prediction.  
 
+We want to estimate 'children' by:
+  'age', which is the current age in years of mother, 
+  'urban', which is 1 if mother lives in urban area, 0 if not
+  'educ', which is the number of years of education the mother has
+  'usemeth', which is 1 if the mother has ever used birth control and 0 otherwise.
+  
+The variables 'age' and 'education' are numerically meaningful, while 'urban' and 'usemeth' are binary.
+
+The variable 'usemeth' has 71 NA values, which we will omit from the select dataset.
+  
+  
+```{r}
+selectData <- fertil2 %>%
+  select(children, age, urban, educ, usemeth) %>%
+  na.omit()
+
+head(selectData)
+str(selectData)
 ```
 
