@@ -1,0 +1,32 @@
+---
+title: "Project_0406"
+author: "Erik Ketterer, Sagan Kakkar, Yamin Zhang, Yining Guan"
+date: "2023-04-06"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Load libraries
+```{r}
+library(tidyverse)
+library(ggplot2)
+library(kableExtra)
+library(dplyr)
+```
+
+# Load data
+```{r}
+fertil2 <- read_csv("data.csv")
+```
+
+# Parameter fine-tuning
+This data was obtained by James Heakins, a former MSU undergraduate, for a project.  The original data comes from Botswana's 1988 Demographic and Health Survey. 
+
+The response variable/parameter of interest is 'children', the number of living children.  We want to estimate 'children' by 
+```{r}
+
+```
+
