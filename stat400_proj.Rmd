@@ -1,0 +1,83 @@
+---
+title: "Project_04_24"
+author: "Erik Ketterer, Sagan Kakkar, Yamin Zhang, Yining Guan"
+date: "2023-04-06"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Load libraries
+```{r}
+library(tidyverse)
+library(ggplot2)
+library(kableExtra)
+library(dplyr)
+library(haven)
+```
+
+# Part1
+
+## Load data
+```{r}
+fertil2 <- read_csv("data.csv")
+```
+
+## Parameter fine-tuning
+This data was obtained by James Heakins, a former MSU undergraduate, for a project.  The original data comes from Botswana's 1988 Demographic and Health Survey. 
+
+The response variable/parameter of interest is 'children', the number of living children.  We are trying to predict the number of living children using the explanatory variables 'age', 'urban', 'educ', and 'usemeth', and whether this is an effective model of prediction.  
+
+We want to estimate 'children' by:
+  'age', which is the current age in years of mother, 
+  'urban', which is 1 if mother lives in urban area, 0 if not
+  'educ', which is the number of years of education the mother has
+  'usemeth', which is 1 if the mother has ever used birth control and 0 otherwise.
+  
+The variables 'age' and 'education' are numerically meaningful, while 'urban' and 'usemeth' are binary.
+
+The variable 'usemeth' has 71 NA values, which we will omit from the select dataset.
+  
+  
+```{r}
+selectData <- fertil2 %>%
+  select(children, age, urban, educ, usemeth) %>%
+  na.omit()
+head(selectData)
+str(selectData)
+```
+
+# Part2
+
+## About data
+The dataset we are going to use is created by the people over at the UCLA Institute for Digital Research and Education (IDRE). 
+The dataset measures schools and teachers, as well as students. The researchers are interested in how the organizational structure of schools influences the performance of students, or how teacher characteristics such as experience, IQ, or teaching style have an impact on student learning.
+
+Therefore, the level 1 observational unit is each student, and level 2 observational unit is school.
+
+## Load data
+```{r}
+mlmdata <- read_dta("https://stats.idre.ucla.edu/stat/examples/imm/imm23.dta")
+```
+
+## Research Question
+
+Does the association between time spent doing homework and math score depend on the type of school?
+
+## Parameter of Interest and Fixed Effect/Random Effect
+
+Therefore, the parameter we are gonna use is 'homework' (Time spend on homework each week) and 'public' (1=public school, 0 = others). And our response variable is 'math'(math score for each student).
+
+Fixed effects are the sex of students, the time spend on their homework, and mean SES scores for schools.
+
+Random effects are the schools.
+
+## Parameter fine-tuning
+We are not going to do any parameter tuning here.
+```{r}
+head(mlmdata)
+str(mlmdata)
+```
+
