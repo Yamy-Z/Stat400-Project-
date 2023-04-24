@@ -64,13 +64,14 @@ mlmdata <- read_dta("https://stats.idre.ucla.edu/stat/examples/imm/imm23.dta")
 
 ## Research Question
 
+Does the time spend on math homework affect the math score?
 Does the association between time spent doing homework and math score depend on the type of school?
 
 ## Parameter of Interest and Fixed Effect/Random Effect
 
 Therefore, the parameter we are gonna use is 'homework' (Time spend on homework each week) and 'public' (1=public school, 0 = others). And our response variable is 'math'(math score for each student).
 
-Fixed effects are the sex of students, the time spend on their homework, and mean SES scores for schools.
+Fixed effects are the time spend on their homework and the type of schools.
 
 Random effects are the schools.
 
