@@ -4,13 +4,13 @@ author: "Erik Ketterer, Sagan Kakkar, Yamin Zhang, Yining Guan"
 date: "2023-04-06"
 output: html_document
 ---
-
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ## Load libraries
 ```{r}
+remove(list = ls())
 library(tidyverse)
 library(ggplot2)
 library(kableExtra)
@@ -18,11 +18,11 @@ library(dplyr)
 library(haven)
 ```
 
-# Part1
+# Part1 GML Regression
 
 ## Load data
 ```{r}
-fertil2 <- read_csv("data.csv")
+fertil2 <- read.csv("data.csv")
 ```
 
 ## Parameter fine-tuning
@@ -35,21 +35,42 @@ We want to estimate 'children' by:
   'urban', which is 1 if mother lives in urban area, 0 if not
   'educ', which is the number of years of education the mother has
   'usemeth', which is 1 if the mother has ever used birth control and 0 otherwise.
+  'agefm', which is age of mother at first marriage.
   
-The variables 'age' and 'education' are numerically meaningful, while 'urban' and 'usemeth' are binary.
+The variables 'age', 'education' and 'agefm' are numerically meaningful, while 'urban' and 'usemeth' are binary.
 
-The variable 'usemeth' has 71 NA values, which we will omit from the select dataset.
-  
+The variable 'usemeth', and 'agefm' has 2332 NA values in total, which we will omit from the select dataset.
+
+The data are available at website: [Data Resource](https://justinmshea.github.io/wooldridge/reference/fertil2.html#source)
   
 ```{r}
 selectData <- fertil2 %>%
-  select(children, age, urban, educ, usemeth) %>%
+  select(children, age, urban, educ, usemeth, agefm) %>%
   na.omit()
 head(selectData)
 str(selectData)
 ```
+## Reseach question
+### Question 1
+Is the model using parameters 'agefm', 'edu', and 'usemeth' to predict the response variable 'children' efficient?
+### Question 2
+Is the model using parameters 'age', 'edu', and 'urban' to predict the response variable 'children' efficient?
+### Question 3
+Which model is better?
 
-# Part2
+## EDA
+
+### univariant
+
+### multivariant
+
+## Reaserch Question 1
+
+## Reaserch Question 2
+
+## Reaserch Question 3 
+
+# Part2 Multilevel Model
 
 ## About data
 The dataset we are going to use is created by the people over at the UCLA Institute for Digital Research and Education (IDRE). 
