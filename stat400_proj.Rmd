@@ -51,16 +51,77 @@ head(selectData)
 str(selectData)
 ```
 ## Reseach question
-### Question 1
-Is the model using parameters 'agefm', 'edu', and 'usemeth' to predict the response variable 'children' efficient?
-### Question 2
-Is the model using parameters 'age', 'edu', and 'urban' to predict the response variable 'children' efficient?
+### Question 1  
+Is the model using parameters 'agefm', 'edu', and 'usemeth' to predict the response variable 'children' efficient?  
+### Question 2  
+Is the model using parameters 'age', 'edu', and 'urban' to predict the response variable 'children' efficient?  
 ### Question 3
 Which model is better?
 
 ## EDA
 
 ### univariant
+* "children'
+```{r}
+ggplot(data = selectData, mapping = aes(x = children)) +
+  geom_histogram(binwidth = 2, fill = "white", color = "black") +
+  labs(x = "Number of Living Children",
+       y = "Count")
+```
+
+* "age"
+```{r}
+ggplot(data = selectData, mapping = aes(x = age)) +
+  geom_histogram(binwidth = 2, fill = "white", color = "black") +
+  labs(x = "Mothers' Age",
+       y = "Count")
+```
+* "urban"
+```{r}
+ggplot(data = selectData, mapping = aes(x = urban)) + 
+  geom_bar(fill = "white", color = "black") +
+  labs(x = "Is Urban",
+       y = "Count")
+
+#Find the counts of each urban type
+table(selectData$urban)
+#Find the proportion for each audience type
+prop.table(table(selectData$urban))
+```
+
+
+* "educ'
+```{r}
+ggplot(data = selectData, mapping = aes(x = educ)) +
+  geom_histogram(binwidth = 2, fill = "white", color = "black") +
+  labs(x = "Mothers' Eduction in Years",
+       y = "Count")
+```
+
+
+* "usemeth"
+```{r}
+ggplot(data = selectData, mapping = aes(x = usemeth)) + 
+  geom_bar(fill = "white", color = "black") +
+  labs(x = "Is Usemeth",
+       y = "Count")
+
+#Find the counts of each urban type
+table(selectData$urban)
+#Find the proportion for each audience type
+prop.table(table(selectData$urban))
+```
+
+
+* "agefm'
+```{r}
+ggplot(data = selectData, mapping = aes(x = agefm)) +
+  geom_histogram(binwidth = 2, fill = "white", color = "black") +
+  labs(x = "Age of First Marriage",
+       y = "Count")
+```
+
+
 
 ### multivariant
 
@@ -82,6 +143,7 @@ ggplot(data = selectData, aes(x = agefm, y = children)) + geom_boxplot() + facet
 ```
 
 According to the plot above, we can see that the mean numbers of living children that a mother had is roughly same no matter she had ever uses the birth control or not. But the highest number of children that a mother had is come from the group that never uses the birth control. What's more, the range of the numbers of living children is wider in the group that never uses the birth control, which I think we can say the mothers who had used birth control were more in control of their desired number of children.
+
 
 
 ## Reaserch Question 1
