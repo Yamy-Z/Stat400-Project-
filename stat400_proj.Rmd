@@ -145,6 +145,35 @@ ggplot(data = selectData, aes(x = agefm, y = children)) + geom_boxplot() + facet
 According to the plot above, we can see that the mean numbers of living children that a mother had is roughly same no matter she had ever uses the birth control or not. But the highest number of children that a mother had is come from the group that never uses the birth control. What's more, the range of the numbers of living children is wider in the group that never uses the birth control, which I think we can say the mothers who had used birth control were more in control of their desired number of children.
 
 
+## Fit Model
+
+```{r}
+model1 <- glm(children ~ agefm + age +usemeth, family = poisson, data = selectData)
+summary(model1)
+```
+
+```{r}
+model2 <- glm(children ~ age + educ + urban, family = poisson, data = selectData)
+summary(model2)
+```
+
+According to the summary of two models above, we can see that the AIC value for model 1 is relatively low, so here we need to choose the model 1 (represent the first research question). We cannot use the drop-in-deviance method here because these two models are not nested.
+
+
+## Goodness of fit test (model 1)
+
+```{r}
+#fit the pearson statistics parameters
+X2 <- sum(residuals(model1, type = "pearson")^2)
+#calculate the df 
+df <- model1$df.residual
+#calculate the p-value
+pvalue <- 1-pchisq(X2, df)
+pvalue
+```
+
+We have hypothesis: H0: the model 1 fits , H1: the model 1 does not fit. Since the p-value I get is 0.972, which is relatively high value, in that case we are fail to reject the null hypothesis. In conclusion, according to the p-value we calcualted, we prefer the model 1 fits. 
+
 
 ## Reaserch Question 1
 
