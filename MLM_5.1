@@ -1,0 +1,335 @@
+---
+title: "MultiLevel"
+author: "Erik Ketterer and Sagan Kakkar"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Preliminaries
+```{r libraries}
+library(tidyverse)
+library(gridExtra)
+library(haven)
+library(lme4)
+```
+
+# About data
+The dataset we are going to use was created by the people over at the UCLA Institute for Digital Research and Education (IDRE). 
+
+The dataset measures schools and teachers, as well as students. The researchers are interested in how the organizational structure of schools influences the performance of students, or how teacher characteristics such as experience, IQ, or teaching style have an impact on student learning.
+
+Therefore, the level 1 observational unit is each student, and level 2 observational unit is school.
+
+# Load data
+```{r}
+Multidata <- read_dta("https://stats.idre.ucla.edu/stat/examples/imm/imm23.dta")
+```
+
+# Research Question
+
+Research Question 1: Does the time spent on homework each week affect a student's math score?
+
+Research Question 2: Does the association between time spent doing homework and math score depend on the type of school (private or public)?
+
+# Parameter of Interest and Fixed Effect/Random Effect
+
+Therefore, the parameters we will use are 'homework' (time spent on homework each week) and 'public' (1=public school, 0 = others). And our response variable is 'math' (math score for each student).
+
+Fixed effects are the time spent on their homework and the type of school.
+
+Random effect is the school, indicated by 'schid' (school ID).
+
+## Parameter fine-tuning
+We are not going to do any parameter tuning here, due to variables of interest having being already organized as indicators.
+```{r}
+head(mlmdata)
+```
+
+# Exploratory Data Analysis 
+
+## Univariate Plots
+
+```{r}
+Multidata %>%
+  summarize(overallmean = mean(math, na.rm = TRUE),
+            overallsd = sd(math, na.rm = TRUE))
+
+math_all <- ggplot(data = Multidata, mapping = aes(x = math)) +
+  geom_histogram(binwidth = 3, fill = "navy", color = "white") +
+  labs(x = "Math Score",
+       y = "Number of Students") 
+
+math_all
+```
+
+Based on the graph above, the distribution of math scores is approximately normal. The data is roughly symmetric about a score of 51.  We can see that the majority of scores are between 41 and 64.
+
+
+```{r}
+math_agg <- Multidata %>%
+  group_by(schid) %>%
+  summarize(mean = mean(math, na.rm = TRUE),
+            sd = sd(math, na.rm = TRUE)) %>%
+  ggplot(mapping = aes(x = mean)) +
+     geom_histogram(binwidth = 2, fill = "navy", color = "white") +
+     labs(x = "Mean Math Score",
+          y = "Number of Schools") 
+
+math_agg
+```
+
+Similar to the previous graph, the distribution of mean math scores per school is nearly normal; it is roughly symmetric around a score of 50. It seems that the majority of mean scores are between 45 and 57.
+
+```{r}
+# Plot with both univariate figures
+grid.arrange(math_all,math_agg,ncol=1)
+```
+
+
+```{r}
+# Changing indicator variable to text
+Multidata <- Multidata%>%
+    mutate(SchoolType = ifelse(public == 1, "Public", "Private"))
+
+data_lev2 <-
+  Multidata %>%
+  group_by(schid) %>%
+  filter(row_number() == 1)
+
+# Creating proportions and table
+table(data_lev2$SchoolType)
+prop.table(table(data_lev2$SchoolType))
+
+# Plot
+inst <- ggplot(data = data_lev2, mapping = aes(x = SchoolType)) +
+  geom_bar(fill = "navy", color = "white") +
+  labs(x = "Type of School (Private vs Public)",
+       y = "Frequency")
+inst
+```
+
+
+The proportions and chart above show that private schools have a lesser frequency (0.35) than public schools (0.65) and because of this the results may not be fully representative of the population. 
+
+
+```{r}
+hwAll <- ggplot(data = Multidata, mapping = aes(x = homework)) +
+  geom_histogram(binwidth = 1, fill = "navy", color = "white") +
+  labs(x = "Time Spent on Homework (0-7)",
+       y = "Number of Students") 
+
+hwAll
+```
+
+The graph above shows a strong right skew. We note that most students spend an hour on homework each week. 
+
+# Bivariate Plots
+
+```{r}
+bp <- ggplot(data = Multidata, mapping = aes(y = math)) +
+  geom_boxplot(binwidth = 2, fill = "navy", color = "black") +
+  labs(x = "Math Scores",
+       y = "Number of Students") +
+  facet_grid(. ~SchoolType)
+bp
+```
+
+The spread of the private vs public math scores and the number of students is about the same for both types of schools, with the median for private schools (59) being noticeable higher than that for public (47) schools. 
+
+```{r}
+plot <- ggplot(data = Multidata, mapping = aes(y = math, x = homework))+
+  geom_point()+
+  geom_smooth(method = "lm", se = F)
+
+plot
+```
+
+We can assume linearity between amount of time spent on homework and math scores based on the graph above.  There is a clear positive linear trend displayed by the blue line.
+
+Lattice Plot:
+
+```{r}
+ggplot(Multidata,aes(x=homework,y=math,color = SchoolType)) +
+  geom_point() + geom_smooth(method="lm",color="black") +
+  facet_wrap(~schid,ncol=5) +  
+  theme(strip.text.x=element_blank())  +
+  labs(x="Time Spent on Homework (Hours)",y="Math Scores")
+```
+
+Similar evidence of linearity to the above plot shown in these individual plots per school.  These plots also show that private schools have higher math scores on average than do public.
+
+
+## Model Building
+
+### Unconditional means model; which we will call Model_a (This is the model with no covariates and random intercepts only.) Model_a is given below:
+
+$$\text{Level 1: } Y_{ij} = a_i + \epsilon_{ij} \text{ where } \epsilon_{ij} \sim N(0, \sigma^2)$$
+
+$$\text{Level 2: } a_i = \alpha_0 + u_i \text{ where } u_i \sim N(0, \sigma_u^2)$$
+
+Composite model:
+
+$$\text Y_{ij} = \alpha_0 + u_i + \epsilon_{ij} \text{ where } \epsilon_{ij} \sim N(0, \sigma^2) \text{, } u_i \sim N(0, \sigma_u^2)$$
+
+
+```{r}
+model_a <- lmer(math ~ 1 + (1|schid), REML = F, data = Multidata)
+summary(model_a)
+coef(model_a)
+```
+
+#### Intraclass Correlation Coefficient
+
+```{r}
+rho <- (24.85)/(24.85+81.24)
+rho
+```
+
+About 23.4% of the total variability in math scores is due to differences between schools.  This value being above 10% (or rho = 0.10) gives us evidence to use a multilevel modeling technique.
+
+### Model 1: Add homework as a level 1 covariate
+
+$$\text{Level 1: } Y_{ij} = a_i + b_{i}x_{i,homework} + \epsilon_{ij} \text{ where } \epsilon_{ij} \sim N(0, \sigma^2)$$
+
+$$\text{Level 2: } a_i = \alpha_0 + u_i $$
+$$b_i = \beta_0 + v_i \text{ where } \begin{bmatrix} u_i \\ v_i \end{bmatrix} \sim N(\begin{bmatrix} 0 \\ 0 \end{bmatrix}, \begin{bmatrix} \sigma_u^2 \\ \rho\sigma_u\sigma_v & \sigma_v^2 \end{bmatrix})$$
+
+Composite model:
+
+$$\text Y_{ij} = \alpha_0 + \beta_0x_{i,homework} + u_i + v_ix_{i,homework}+ \epsilon_{ij} \text{ where } \epsilon_{ij} \sim N(0, \sigma^2) \text{, } \begin{bmatrix} v_i \\ u_i \end{bmatrix} \sim N(\begin{bmatrix} 0 \\ 0 \end{bmatrix}, \begin{bmatrix} \sigma_u^2 \\ \rho\sigma_u\sigma_v & \sigma_v^2 \end{bmatrix})$$
+
+```{r}
+model1 <- lmer(math ~ homework + (1+homework|schid), REML = F, data = Multidata)
+summary(model1)
+coef(model1)
+```
+
+$$ \hat{\alpha_0} = 46.32 = \text{the mean math score when the time spent on homework is zero hours   } $$
+$$ \hat{\beta_0} = 1.99 = \text{the mean change in math score when the time spent on homework increases by one hour } $$
+$$ \hat{\sigma}^2 = 53.30 = \text{the variance in math score in within school deviations } $$ 
+$$ \hat{\sigma_u}^2 = 59.28 = \text{the variance in math score in between-school deviations when the time spent on homework is zero hour } $$
+$$ \hat{\sigma_v}^2 = 16.79 = \text{the variance in math score in between-school deviations as the time spent on homework increases by one hour } $$
+
+### Model 2: Adding a level 2 covariate of 'public' to model 1
+
+$$\text{Level 1: } Y_{ij} = a_i + b_{i}x_{i,homework} + \epsilon_{ij} \text{ where } \epsilon_{ij} \sim N(0, \sigma^2)$$
+
+$$\text{Level 2: } a_i = \alpha_0 + \alpha_{1}x_{i,public} + u_i $$
+$$b_i = \beta_0 + \beta_{1}x_{i,public} + v_i \text{ where } \begin{bmatrix} u_i \\ v_i \end{bmatrix} \sim N(\begin{bmatrix} 0 \\ 0 \end{bmatrix}, \begin{bmatrix} \sigma_u^2 \\ \rho\sigma_u\sigma_v & \sigma_v^2 \end{bmatrix})$$
+
+Composite model:
+
+$$\text Y_{ij} = [\alpha_0 + \alpha_{1}x_{i,public} + \beta_0x_{i,homework} + \beta_{1}x_{i,public}x_{i,homework}] + [u_i + v_ix_{i,homework}+ \epsilon_{ij} \text{ where } \epsilon_{ij}] \sim N(0, \sigma^2) \text{, } \begin{bmatrix} v_i \\ u_i \end{bmatrix} \sim N(\begin{bmatrix} 0 \\ 0 \end{bmatrix}, \begin{bmatrix} \sigma_u^2 \\ \rho\sigma_u\sigma_v & \sigma_v^2 \end{bmatrix})$$
+
+```{r}
+model2 <- lmer(math ~ homework + public + public:homework + (1+homework + public|schid), REML = F, data = Multidata)
+summary(model2)
+coef(model2)
+```
+
+### Model 2: Reducing Complexity 
+
+We reduce the complexity of the model above by taking out the level two error term.
+$$\text v_i $$
+By taking out the level two error term, we take out the randomness of the 'public' variable (see R output for coef(model2.reduced) below). 
+
+We also removed the interaction term between public and homework for model for simplicity.  This may improve significance results.
+
+These two actions solve the issue we were having with model two above.
+
+$$\text{Level 1: } Y_{ij} = a_i + b_{i}x_{i,homework} + \epsilon_{ij} \text{ where } \epsilon_{ij} \sim N(0, \sigma^2)$$
+
+$$\text{Level 2: } a_i = \alpha_0 + \alpha_{1}x_{i,public} + u_i $$
+$$b_i = \beta_0 + \beta_{1}x_{i,public} \text{ where } u_i \sim N(0, \sigma_u^2)$$
+
+Composite model:
+
+$$\text Y_{ij} = [\alpha_0 + \alpha_{1}x_{i,public} + \beta_0x_{i,homework} ] + [u_i + \epsilon_{ij}] \text{ where } \epsilon_{ij} \sim N(0, \sigma^2) \text{, } u_i \sim N(0, \sigma_u^2))$$
+
+```{r}
+model2.reduced <- lmer(math ~ homework + public + (1 + homework|schid), REML = F, data = Multidata)
+summary(model2.reduced)
+coef(model2.reduced)
+```
+
+$$ \hat{\alpha_0} = 49.07 = \text{the mean math score when the time spent on homework is zero hours {homework = 0} for private schools {public = 0}  } $$
+$$ \hat{\alpha_1} = -4.08 = \text{the mean math score for public {public = 1} schools compared to private {public = 0} schools, controlling for the effects of time spent on homework } $$
+$$ \hat{\beta_1} = 1.98 = \text{the mean change in math score when time spent on homework increases by one hour, controlling for the effects of school type } $$
+We also note that both for homework and public, |t| values  are above the threshold of 2:
+
+homework: t = 2.213
+public: t =  -2.154
+
+With the absence of p-values, we generally accept |t| > 2 as significant in multilevel modeling.  This gives evidence that our model2.reduced is likely a good model build to predict math score based on the time spent on homework and school type.
+
+To properly test the nested models, the models should have corresponding levels of complexity.  This should not be an issue because we eliminated error from the 'public' variable.  
+
+
+## Model Comparisons
+
+Hypothesis:
+
+Null:
+$$ \alpha_{1}x_{i,public} = 0$$
+Alternative:
+$$ \alpha_{1}x_{i,public} \neq 0$$
+
+
+```{r}
+model1 <- lmer(math ~ homework + (1+homework|schid), REML = F, data = Multidata)
+# Both models need same variance structure to use a drop-in-deviance test
+# We add the variance term associated with public in order to account for this
+model2.reducedI <- lmer(math ~ homework + public + (1 + homework + public|schid), REML = F, data = Multidata)
+
+# Drop-in-deviance
+anova(model1, model2.reducedI, test = "Chisq")
+
+# The code may generate a warning due to the complexity of the models being compared
+```
+
+
+Test Statistic: 9.0584
+P-value:        0.0597
+Decision:   Fail to reject null hypothesis
+Conclusion: The model with homework and public is shown to not be significantly between than the model with only homework. Due to this, the model with just homework is preferred.
+
+
+# Model Analysis
+
+Goodness of fit?
+
+```{r}
+# We will perfom a goodness of fit test for Model2.reducedI 
+ts <- sum(residuals(model2.reducedI, type = "pearson")^2)
+pval <- 1-pchisq(ts, 518)
+
+ts
+pval
+
+```
+Hypothesis:
+
+Null: The model fits
+Alternative: The model does not fit
+
+Test Stat: 25734.71
+Pval: 0
+Conclusion: Based on the large test statistic and small p-value we can conclude that the model with homeowkr and public and both variance terms does not fit.
+
+
+## Conclusion in Context
+
+The research questions stated at the beginning are repeated below for convenience:
+
+Research Question 1: Does the time spent on homework each week affect a student's math score?
+
+Research Question 2: Does the association between time spent doing homework and math score depend on the type of school (private or public)?
+
+The answer to research question 1 can be evaluated using AIC as a comparison metric. The AIC for model 1, the model which has only homework as the predictor for math, is 3651.0. The AIC for model2 is 3651.9 and that for model2.reduced is 3648.8. Based on this, it can be seen that the model with homework as a predictor is as good as models with public and an interaction term, based on AIC. 
+
+
+The answer to the second research question is simply no. The AIC for the model with homework and that for the model with homework and public have similar AIC values which means that they perform relativity similarly. 
