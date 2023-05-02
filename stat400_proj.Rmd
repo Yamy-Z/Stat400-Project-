@@ -182,6 +182,9 @@ phat2 <- X2/model2$df.residual
 phat2
 ```
 
+Since mean and variance are not very equal as we shown before, the assumption may not very perfect in this. So we need to take the overdispersion into account. Since the value of two models' dispersion parameters are not greater than 1, so we don't have to use the quasipoisson in this case. 
+
+
 ## Goodness of fit test (model 2)
 
 ```{r}
