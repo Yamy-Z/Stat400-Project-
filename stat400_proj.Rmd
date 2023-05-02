@@ -64,10 +64,12 @@ Which model is better?
 * "children'
 ```{r}
 ggplot(data = selectData, mapping = aes(x = children)) +
-  geom_histogram(binwidth = 2, fill = "white", color = "black") +
+  geom_histogram(binwidth = 1, fill = "white", color = "black") +
   labs(x = "Number of Living Children",
        y = "Count")
 ```
+
+From the graph, we can see the number of children follows right skewed normal distribution with mean value at around 3 and 4. This also indicates that our response variable appears to follow poisson distribution.
 
 * "age"
 ```{r}
@@ -76,6 +78,9 @@ ggplot(data = selectData, mapping = aes(x = age)) +
   labs(x = "Mothers' Age",
        y = "Count")
 ```
+
+From graph above, the age of mothers seems like to follow normal distribution even if there is a tail on the right side.  
+
 * "urban"
 ```{r}
 ggplot(data = selectData, mapping = aes(x = urban)) + 
@@ -85,19 +90,23 @@ ggplot(data = selectData, mapping = aes(x = urban)) +
 
 #Find the counts of each urban type
 table(selectData$urban)
-#Find the proportion for each audience type
+
+#Find the proportion for urban
 prop.table(table(selectData$urban))
+
 ```
 
+From the plot and the table above, the number of mothers living in urban area is pretty close to the number of mothers who do not live in urban area.
 
 * "educ'
 ```{r}
 ggplot(data = selectData, mapping = aes(x = educ)) +
-  geom_histogram(binwidth = 2, fill = "white", color = "black") +
+  geom_histogram(binwidth = 1.5, fill = "white", color = "black") +
   labs(x = "Mothers' Eduction in Years",
        y = "Count")
 ```
 
+From the graph, we can see that there are two values (educ=0 and educ=7) in education appearing to be significant large, which means the most of women in Africa have no education or just elementary education.
 
 * "usemeth"
 ```{r}
@@ -106,12 +115,16 @@ ggplot(data = selectData, mapping = aes(x = usemeth)) +
   labs(x = "Is Usemeth",
        y = "Count")
 
-#Find the counts of each urban type
+#Find the counts of usemeth
 table(selectData$urban)
-#Find the proportion for each audience type
+
+
+#Find the proportion for each usemeth type
 prop.table(table(selectData$urban))
+
 ```
 
+From graph, there seems like a big difference in the number of mother using birth control and the number of mother that does not use birth control.However, in the table we can see that the difference is not significant.
 
 * "agefm'
 ```{r}
@@ -121,66 +134,34 @@ ggplot(data = selectData, mapping = aes(x = agefm)) +
        y = "Count")
 ```
 
-
+From the graph, the age of first marriage follows normal distribution with mean at 20 and it's right skewed.
 
 ### multivariant
 
-* 'chilren' vs. 'age'
-```{r}
-ggplot(data = selectData, aes(x = age, y = children)) + geom_point() + geom_smooth(method = "lm") + labs(x = "Current Age of Mother", y = "Numbers of Living Children", title = "Relationship between Children and Age")
-```
-
-According to the graph, from the smooth line, we can see that the relationship between `age` and `children` is positively related, which means the older the current age of mother is, we can assume the more numbers of living children she had.
-
-```{r}
-ggplot(data = selectData, aes(x = educ, y = children)) + geom_point() + facet_grid(.~ urban)+ geom_smooth(method = "lm") + labs(x = "The Years of Education that mother had", y = "Numbers of Living Children", title = "Relationship between Education and Children")
-```
-
-According to the graph above, we can see that the the smooth line here is negatively, which mean the relationship between `educ` and `children` is negatively related no matter the mother lived in the urban area or not. In that case, we can say that as the education that the mother had increase, we expect the number of living children that she had decrease.
-
-
-```{r}
-ggplot(data = selectData, aes(x = agefm, y = children)) + geom_boxplot() + facet_grid(. ~ usemeth) + labs(x = "Mother's age at first marriage", y = "Number of Living Children", title = "Relationship between children and age of first marriage")
-```
-
-According to the plot above, we can see that the mean numbers of living children that a mother had is roughly same no matter she had ever uses the birth control or not. But the highest number of children that a mother had is come from the group that never uses the birth control. What's more, the range of the numbers of living children is wider in the group that never uses the birth control, which I think we can say the mothers who had used birth control were more in control of their desired number of children.
 
 ## Assumption
+
+## Model 1
+
+### Poisson Response
+Our response variable is the number of children each mother has. It’s a count value and it can be described by a Poisson Process. From the children data above, it follows right skewed normal distribution, so this also shows it's a Poisson Response.
+
+### Independence
+In our project, each observation is a mother, so it is reasonable to assume that each observation is independent to each other.
+
 ### Mean = Variance
 
-* 'age'
-```{r}
-cuts = cut(selectData$age,
-           breaks=c(15,20,25,30,35,40,45,50))
-ageGrps <- data.frame(cuts, selectData)
-ggplot(data = ageGrps, aes(x = children)) +
-  geom_histogram(binwidth = .5, color = "black", 
-                 fill = "white") +
-  facet_wrap(cuts) +
-  xlab("Number of Children")
-```
-
-```{r}
-# Mean = Variance
-table1chp4<- ageGrps  %>% group_by(cuts)  %>% 
-  summarise(mnNum= mean(children),varNum=var(children),n=n())
-kable(table1chp4, booktabs=T, 
-      caption="Compare mean and variance of number of children within each age group.",
-      col.names = c("Age Groups", "Mean", "Variance", "n")) %>%
-  kable_styling(full_width = F)
-```
-
- 
 * 'educ'
 ```{r}
 cuts = cut(selectData$educ,
            breaks=c(-1,5,10,15,20))
 educGrps <- data.frame(cuts, selectData)
-ggplot(data = ageGrps, aes(x = children)) +
+ggplot(data = educGrps, aes(x = children)) +
   geom_histogram(binwidth = .5, color = "black", 
                  fill = "white") +
   facet_wrap(cuts) +
-  xlab("Number of Children")
+  xlab("Number of Children") +
+  ylab("Count")
 ```
 
 ```{r}
@@ -188,7 +169,7 @@ ggplot(data = ageGrps, aes(x = children)) +
 table1chp4<- educGrps  %>% group_by(cuts)  %>% 
   summarise(mnNum= mean(children),varNum=var(children),n=n())
 kable(table1chp4, booktabs=T, 
-      caption="Compare mean and variance of number of children within each age group.",
+      caption="Compare mean and variance of number of children within each education group.",
       col.names = c("Age Groups", "Mean", "Variance", "n")) %>%
   kable_styling(full_width = F)
 
@@ -199,13 +180,14 @@ kable(table1chp4, booktabs=T,
 
 ```{r}
 cuts = cut(selectData$agefm,
-           breaks=c(9, 15, 20, 25, 30, 35, 40, 45, 50))
+           breaks=c(9, 20, 30, 40, 50))
 agefmGrps <- data.frame(cuts, selectData)
 ggplot(data = agefmGrps, aes(x = children)) +
   geom_histogram(binwidth = .5, color = "black", 
                  fill = "white") +
   facet_wrap(cuts) +
-  xlab("Number of Children")
+  xlab("Number of Children") +
+  ylab("Count")
 ```
 
 ```{r}
@@ -214,32 +196,13 @@ table1chp4<- agefmGrps  %>% group_by(cuts)  %>%
   summarise(mnNum= mean(children),varNum=var(children),n=n())
 kable(table1chp4, booktabs=T, 
       caption="Compare mean and variance of number of children within each age group.",
-      col.names = c("Age Groups", "Mean", "Variance", "n")) %>%
+      col.names = c("Educ Groups", "Mean", "Variance", "n")) %>%
   kable_styling(full_width = F)
 
 ```
 
 
-```{r}
-ggplot(data = selectData, aes(x = children)) +
-  geom_histogram(binwidth = .5, color = "black", 
-                 fill = "white") +
-  facet_wrap(selectData$urban) +
-  xlab("Number of Children")
-```
-
-```{r}
-# Mean = Variance
-table1chp4<- selectData  %>% group_by(urban)  %>% 
-  summarise(mnNum= mean(children),varNum=var(children),n=n())
-kable(table1chp4, booktabs=T, 
-      caption="Compare mean and variance of number of children within each age group.",
-      col.names = c("Age Groups", "Mean", "Variance", "n")) %>%
-  kable_styling(full_width = F)
-
-```
-
-
+* 'usemeth'
 ```{r}
 ggplot(data = selectData, aes(x = children)) +
   geom_histogram(binwidth = .5, color = "black", 
@@ -253,59 +216,122 @@ ggplot(data = selectData, aes(x = children)) +
 table1chp4<- selectData  %>% group_by(usemeth)  %>% 
   summarise(mnNum= mean(children),varNum=var(children),n=n())
 kable(table1chp4, booktabs=T, 
-      caption="Compare mean and variance of number of children within each age group.",
+      caption="Compare mean and variance of number of children within each group.",
+      col.names = c("Usemeth Groups", "Mean", "Variance", "n")) %>%
+  kable_styling(full_width = F)
+
+```
+
+* Summary: By looking at the data, some of the graph have too few data to show its distribution, so we don't know if it will follow normal distribution as desired. From the table, we can see that some means and variance are not the same, which means the overdispersion might be a problem.
+
+
+### Linearity
+
+```{r}
+model2 <- glm(children ~ agefm +educ+usemeth, family = 'poisson', data = selectData)
+plot(model2, which = 1)
+```
+
+From residuals vs. fitted graph, we can see that the fitted line is linear, which means the assumption of linearity is met.
+
+### Model 2
+
+### Poisson Response
+Our response variable is the number of children each mother has. It’s a count value and it can be described by a Poisson Process. From the children data above, it follows right skewed normal distribution, so this also shows it's a Poisson Response.
+
+### Independence
+In our project, each observation is a mother, so it is reasonable to assume that each observation is independent to each other.
+
+### Mean = Variance
+
+* 'educ'
+```{r}
+cuts = cut(selectData$educ,
+           breaks=c(-1,5,10,15,20))
+educGrps <- data.frame(cuts, selectData)
+ggplot(data = educGrps, aes(x = children)) +
+  geom_histogram(binwidth = .5, color = "black", 
+                 fill = "white") +
+  facet_wrap(cuts) +
+  xlab("Number of Children") +
+  ylab("Count")
+```
+
+```{r}
+# Mean = Variance
+table1chp4<- educGrps  %>% group_by(cuts)  %>% 
+  summarise(mnNum= mean(children),varNum=var(children),n=n())
+kable(table1chp4, booktabs=T, 
+      caption="Compare mean and variance of number of children within each education group.",
       col.names = c("Age Groups", "Mean", "Variance", "n")) %>%
   kable_styling(full_width = F)
 
 ```
 
-###  Checking Linearity
-* age
-
+* 'age'
 ```{r}
-## Checking linearity assumption:
-sumStats <- selectData %>% group_by(age) %>% 
-  summarise(mnchildr = mean(children),
-            logmnchildrl = log(mnchildr), n=n())
-ggplot(sumStats, aes(x=age, y=logmnchildrl)) +
-  geom_point()+
-  geom_smooth(method = "loess", size = 1.5)+
-  xlab("Age of Mother") +
-  ylab("Log of the empirical mean of the number of Children") 
+cuts = cut(selectData$age,
+           breaks=c(15,20,25,30,35,40,45,50))
+ageGrps <- data.frame(cuts, selectData)
+ggplot(data = ageGrps, aes(x = children)) +
+  geom_histogram(binwidth = .5, color = "black", 
+                 fill = "white") +
+  facet_wrap(cuts) +
+  xlab("Number of Children") +
+  ylab("Count")
 ```
 
-* agefm
-
 ```{r}
-## Checking linearity assumption:
-sumStats <- selectData %>% group_by(agefm) %>% 
-  summarise(mnchildr = mean(children),
-            logmnchildrl = log(mnchildr), n=n())
-ggplot(sumStats, aes(x=agefm, y=logmnchildrl)) +
-  geom_point()+
-  geom_smooth(method = "loess", size = 1.5)+
-  xlab("Age of Mother at First Mirrage") +
-  ylab("Log of the empirical mean of the number of Children") 
+# Mean = Variance
+table1chp4<- ageGrps  %>% group_by(cuts)  %>% 
+  summarise(mnNum= mean(children),varNum=var(children),n=n())
+kable(table1chp4, booktabs=T, 
+      caption="Compare mean and variance of number of children within each age group.",
+      col.names = c("Age Groups", "Mean", "Variance", "n")) %>%
+  kable_styling(full_width = F)
 ```
 
-* educ
+
+* 'urban'
 ```{r}
-## Checking linearity assumption:
-sumStats <- selectData %>% group_by(educ) %>% 
-  summarise(mnchildr = mean(children),
-            logmnchildrl = log(mnchildr), n=n())
-ggplot(sumStats, aes(x=educ, y=logmnchildrl)) +
-  geom_point()+
-  geom_smooth(method = "loess", size = 1.5)+
-  xlab("Years of Education") +
-  ylab("Log of the empirical mean of the number of Children") 
+ggplot(data = selectData, aes(x = children)) +
+  geom_histogram(binwidth = .5, color = "black", 
+                 fill = "white") +
+  facet_wrap(selectData$urban) +
+  xlab("Number of Children") +
+  ylab("Count")
 ```
+
+```{r}
+# Mean = Variance
+table1chp4<- selectData  %>% group_by(urban)  %>% 
+  summarise(mnNum= mean(children),varNum=var(children),n=n())
+kable(table1chp4, booktabs=T, 
+      caption="Compare mean and variance of number of children within each group.",
+      col.names = c("Urban Groups", "Mean", "Variance", "n")) %>%
+  kable_styling(full_width = F)
+
+```
+
+
+* Summmary: From the graphs and tables, the mean and variance is not eactly the same for some group of data. Therefore, we need to check the overdispersion problem for this model too.
+
+
+### Linearity
+
+```{r}
+model2 <- glm(children ~ age +educ+urban, family = 'quasipoisson', data = selectData)
+plot(model2, which = 1)
+```
+
+From the residuals and fitted plot, the fitted line has little curvature, but the curature is very small. I think it's acceptable. Thus, the linearity assumption for model 2 is also met.
 
 ## Reaserch Question 1
 
-## Reaserch Question 2
 
 ## Reaserch Question 3 
+
+### Goodness of Fit
 
 # Part2 Multilevel Model
 
