@@ -315,7 +315,7 @@ Conclusion: The model with homework and public is shown to not be significantly 
 
 # Model Analysis
 
-Goodness of fit?
+Goodness of fit
 
 ```{r}
 # We will perform a goodness of fit test for Model2.reducedI 
@@ -333,7 +333,25 @@ Alternative: The model does not fit
 
 Test Stat: 25734.71
 Pval: 0
-Conclusion: Based on the large test statistic and small p-value we can conclude that the model with homeowkr and public and both variance terms does not fit.
+Conclusion: Based on the large test statistic and small p-value we can conclude that the model with homework and public and both variance terms does not fit.
+
+
+```{r}
+ts <- sum(residuals(model1, type = "pearson")^2)
+pval <- 1-pchisq(ts, 518)
+
+ts
+pval
+```
+
+Hypothesis:
+
+Null: The model fits
+Alternative: The model does not fit
+
+Test Stat: 25533.57
+Pval: 0
+Conclusion: Based on the large test statistic and small p-value we can conclude that the model with homework and a homework variance term does not fit.
 
 
 ## Conclusion in Context

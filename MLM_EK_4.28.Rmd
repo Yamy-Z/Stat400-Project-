@@ -44,7 +44,7 @@ Fixed effects are the time spent on their homework and the type of school.
 Random effect is the school, indicated by 'schid' (school ID).
 
 ## Parameter fine-tuning
-We are not going to do any parameter tuning here.
+We are not going to do any parameter tuning here, due to variables of interest having being already organized as indicators.
 ```{r}
 head(mlmdata)
 ```
@@ -165,19 +165,19 @@ Similar evidence of linearity to the above plot shown in these individual plots 
 
 ## Model Building
 
-### Unconditional means model; which we will call Model a (This is the model with no covariates and random intercepts only.) Model a is given below:
+### Unconditional means model; which we will call Model_a (This is the model with no covariates and random intercepts only.) Model_a is given below:
 
 $$\text{Level 1: } Y_{ij} = a_i + \epsilon_{ij} \text{ where } \epsilon_{ij} \sim N(0, \sigma^2)$$
 
 $$\text{Level 2: } a_i = \alpha_0 + u_i \text{ where } u_i \sim N(0, \sigma_u^2)$$
 
-a. Write the composite model.
+Composite model:
 
 $$\text Y_{ij} = \alpha_0 + u_i + \epsilon_{ij} \text{ where } \epsilon_{ij} \sim N(0, \sigma^2) \text{, } u_i \sim N(0, \sigma_u^2)$$
 
 
 ```{r}
-modela <- lmer(math ~ 1 + (1|schid), REML = F, data = Multidata)
+model_a <- lmer(math ~ 1 + (1|schid), REML = F, data = Multidata)
 summary(modela)
 coef(modela)
 ```
@@ -198,7 +198,7 @@ $$\text{Level 1: } Y_{ij} = a_i + b_{i}x_{i,homework} + \epsilon_{ij} \text{ whe
 $$\text{Level 2: } a_i = \alpha_0 + u_i $$
 $$b_i = \beta_0 + v_i \text{ where } \begin{bmatrix} u_i \\ v_i \end{bmatrix} \sim N(\begin{bmatrix} 0 \\ 0 \end{bmatrix}, \begin{bmatrix} \sigma_u^2 \\ \rho\sigma_u\sigma_v & \sigma_v^2 \end{bmatrix})$$
 
-Write the composite model.
+Composite model:
 
 $$\text Y_{ij} = \alpha_0 + \beta_0x_{i,homework} + u_i + v_ix_{i,homework}+ \epsilon_{ij} \text{ where } \epsilon_{ij} \sim N(0, \sigma^2) \text{, } \begin{bmatrix} v_i \\ u_i \end{bmatrix} \sim N(\begin{bmatrix} 0 \\ 0 \end{bmatrix}, \begin{bmatrix} \sigma_u^2 \\ \rho\sigma_u\sigma_v & \sigma_v^2 \end{bmatrix})$$
 
@@ -221,7 +221,7 @@ $$\text{Level 1: } Y_{ij} = a_i + b_{i}x_{i,homework} + \epsilon_{ij} \text{ whe
 $$\text{Level 2: } a_i = \alpha_0 + \alpha_{1}x_{i,public} + u_i $$
 $$b_i = \beta_0 + \beta_{1}x_{i,public} + v_i \text{ where } \begin{bmatrix} u_i \\ v_i \end{bmatrix} \sim N(\begin{bmatrix} 0 \\ 0 \end{bmatrix}, \begin{bmatrix} \sigma_u^2 \\ \rho\sigma_u\sigma_v & \sigma_v^2 \end{bmatrix})$$
 
-Write the composite model.
+Composite model:
 
 $$\text Y_{ij} = [\alpha_0 + \alpha_{1}x_{i,public} + \beta_0x_{i,homework} + \beta_{1}x_{i,public}x_{i,homework}] + [u_i + v_ix_{i,homework}+ \epsilon_{ij} \text{ where } \epsilon_{ij}] \sim N(0, \sigma^2) \text{, } \begin{bmatrix} v_i \\ u_i \end{bmatrix} \sim N(\begin{bmatrix} 0 \\ 0 \end{bmatrix}, \begin{bmatrix} \sigma_u^2 \\ \rho\sigma_u\sigma_v & \sigma_v^2 \end{bmatrix})$$
 
@@ -233,9 +233,9 @@ coef(model2)
 
 ### Model 2: Reducing Complexity 
 
-by taking out level two error term, 
+We reduce the complexity of the model above by taking out the level two error term.
 $$\text v_i $$
-, we take out the randomness of the 'public' variable (see R output for coef(model2.reduced) below). 
+By taking out the level two error term, we take out the randomness of the 'public' variable (see R output for coef(model2.reduced) below). 
 
 We also removed the interaction term between public and homework for model for simplicity.  This may improve significance results.
 
@@ -246,7 +246,7 @@ $$\text{Level 1: } Y_{ij} = a_i + b_{i}x_{i,homework} + \epsilon_{ij} \text{ whe
 $$\text{Level 2: } a_i = \alpha_0 + \alpha_{1}x_{i,public} + u_i $$
 $$b_i = \beta_0 + \beta_{1}x_{i,public} \text{ where } u_i \sim N(0, \sigma_u^2)$$
 
-Write the composite model.
+Composite model:
 
 $$\text Y_{ij} = [\alpha_0 + \alpha_{1}x_{i,public} + \beta_0x_{i,homework} ] + [u_i + \epsilon_{ij}] \text{ where } \epsilon_{ij} \sim N(0, \sigma^2) \text{, } u_i \sim N(0, \sigma_u^2))$$
 
@@ -271,17 +271,31 @@ To properly test the nested models, the models should have corresponding levels 
 
 ## Model Comparisons
 
-WRITE HO AND H1
+Hypothesis:
+
+Null:
+$$ \alpha_{1}x_{i,public} = 0$$
+Alternative:
+$$ \alpha_{1}x_{i,public} \neq 0$$
+
 
 ```{r}
+model1 <- lmer(math ~ homework + (1+homework|schid), REML = F, data = Multidata)
+# Both models need same variance structure to use a drop-in-deviance test
+# We add the variance term associated with public in order to account for this
+model2.reducedI <- lmer(math ~ homework + public + (1 + homework + public|schid), REML = F, data = Multidata)
+
 # Drop-in-deviance
-anova(model2, model4, test = "Chisq")
+anova(model1, model2.reducedI, test = "Chisq")
+
+# The code may generate a warning due to the complexity of the models being compared
 ```
 
-Test Statistic: 4.1955
-P-value:        0.04053
-Decision:   Fail to reject that the reduced model is sufficient
-Conclusion: The model with hoemwork and school type (public) is preferred to the model with only homework.
+
+Test Statistic: 9.0584
+P-value:        0.0597
+Decision:   Fail to reject null hypothesis
+Conclusion: The model with homework and public is shown to not be significantly between than the model with only homework. Due to this, the model with just homework is preferred.
 
 
 # Model Analysis
@@ -289,7 +303,11 @@ Conclusion: The model with hoemwork and school type (public) is preferred to the
 Goodness of fit?
 
 ```{r}
-summary(model4)
+# We will perfom a goodness of fit test for Model2.reducedI 
+ts <- sum(residuals(model2.reducedI, type = "pearson")^2)
+df <- model2.reducedI$df.residual
+pval <- 1-pchisq(ts, df)
+pval
 ```
 
 
