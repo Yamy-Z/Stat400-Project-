@@ -156,60 +156,6 @@ ggplot(data = selectData, aes(x = agefm, y = children)) + geom_boxplot() + facet
 
 According to the plot above, we can see that the mean numbers of living children that a mother had is roughly same no matter she had ever uses the birth control or not. But the highest number of children that a mother had is come from the group that never uses the birth control. What's more, the range of the numbers of living children is wider in the group that never uses the birth control, which I think we can say the mothers who had used birth control were more in control of their desired number of children.
 
-## Model Fits
-
-```{r}
-model1 <- glm(children ~ agefm + educ +usemeth, family = poisson, data = selectData)
-summary(model1)
-```
-
-```{r}
-model2 <- glm(children ~ age + educ + urban, family = poisson, data = selectData)
-summary(model2)
-```
-
-According to the summary of two models above, we can see that the AIC value for model 2 is relatively low, so here we need to choose the model 2 (represent the first research question). We cannot use the drop-in-deviance method here because these two models are not nested.
-
-## Overdispersion
-
-```{r}
-X1 <- sum(residuals(model1, type = "pearson")^2)
-phat1 <- X1/model1$df.residual
-phat1
-
-X2 <- sum(residuals(model2, type = "pearson")^2)
-phat2 <- X2/model2$df.residual
-phat2
-```
-
-Since mean and variance are not very equal as we shown before, the assumption may not very perfect in this. So we need to take the overdispersion into account. Since the value of two models' dispersion parameters are not greater than 1, so we don't have to use the quasipoisson in this case. 
-
-
-## Goodness of fit test (model 2)
-
-```{r}
-#fit the pearson statistics parameters for model 1
-X3 <- sum(residuals(model2, type = "pearson")^2)
-#calculate the df 
-df <- model2$df.residual
-#calculate the p-value
-pvalue <- 1-pchisq(X3, df)
-pvalue
-```
-
-We have hypothesis: H0: the model 2 fits , H1: the model 2 does not fit. Since the p-value I get is 0.99, which is relatively high value, in that case we are fail to reject the null hypothesis. In conclusion, according to the p-value we calculated, we prefer the model 2 fits.
-
-## Goodness of fit test (model 1)
-
-
-```{r}
-X4 <- sum(residuals(model1, type = "pearson")^2)
-df2<- model1$df.residual
-pvalue2 <- 1-pchisq(X4,df2)
-pvalue2
-```
-
-We have hypothesis: H0: the model 1 fits, H1: the model 1 does not fit. Since the p-value is 0, which is very small, in that case we have evidence that reject the null hypothesis. In conclusion, we prefer the model 1 does not fits.
 
 
 ## Assumption
@@ -399,43 +345,57 @@ plot(model2, which = 1)
 
 From the residuals and fitted plot, the fitted line has little curvature, but the curature is very small. I think it's acceptable. Thus, the linearity assumption for model 2 is also met.
 
-## Reaserch Question 1
+## Model Fits
 
-
-## Reaserch Question 3 
-
-### Goodness of Fit
-
-# Part2 Multilevel Model
-
-## About data
-The dataset we are going to use is created by the people over at the UCLA Institute for Digital Research and Education (IDRE). 
-The dataset measures schools and teachers, as well as students. The researchers are interested in how the organizational structure of schools influences the performance of students, or how teacher characteristics such as experience, IQ, or teaching style have an impact on student learning.
-
-Therefore, the level 1 observational unit is each student, and level 2 observational unit is school.
-
-## Load data
 ```{r}
-mlmdata <- read_dta("https://stats.idre.ucla.edu/stat/examples/imm/imm23.dta")
+model1 <- glm(children ~ agefm + educ +usemeth, family = poisson, data = selectData)
+summary(model1)
 ```
 
-## Research Question
-
-Does the time spend on math homework affect the math score?
-Does the association between time spent doing homework and math score depend on the type of school?
-
-## Parameter of Interest and Fixed Effect/Random Effect
-
-Therefore, the parameter we are gonna use is 'homework' (Time spend on homework each week) and 'public' (1=public school, 0 = others). And our response variable is 'math'(math score for each student).
-
-Fixed effects are the time spend on their homework and the type of schools.
-
-Random effects are the schools.
-
-## Parameter fine-tuning
-We are not going to do any parameter tuning here.
 ```{r}
-head(mlmdata)
-str(mlmdata)
+model2 <- glm(children ~ age + educ + urban, family = poisson, data = selectData)
+summary(model2)
 ```
+
+According to the summary of two models above, we can see that the AIC value for model 2 is relatively low, so here we need to choose the model 2 (represent the first research question). We cannot use the drop-in-deviance method here because these two models are not nested.
+
+## Overdispersion
+
+```{r}
+X1 <- sum(residuals(model1, type = "pearson")^2)
+phat1 <- X1/model1$df.residual
+phat1
+X2 <- sum(residuals(model2, type = "pearson")^2)
+phat2 <- X2/model2$df.residual
+phat2
+```
+
+Since mean and variance are not very equal as we shown before, the assumption may not very perfect in this. So we need to take the overdispersion into account. Since the value of two models' dispersion parameters are not greater than 1, so we don't have to use the quasipoisson in this case. 
+
+## Goodness of fit test (model 2)
+
+```{r}
+#fit the pearson statistics parameters for model 1
+X3 <- sum(residuals(model2, type = "pearson")^2)
+#calculate the df 
+df <- model2$df.residual
+#calculate the p-value
+pvalue <- 1-pchisq(X3, df)
+pvalue
+```
+
+We have hypothesis: H0: the model 2 fits , H1: the model 2 does not fit. Since the p-value I get is 0.99, which is relatively high value, in that case we are fail to reject the null hypothesis. In conclusion, according to the p-value we calculated, we prefer the model 2 fits.
+
+## Goodness of fit test (model 1)
+
+
+```{r}
+X4 <- sum(residuals(model1, type = "pearson")^2)
+df2<- model1$df.residual
+pvalue2 <- 1-pchisq(X4,df2)
+pvalue2
+```
+
+We have hypothesis: H0: the model 1 fits, H1: the model 1 does not fit. Since the p-value is 0, which is very small, in that case we have evidence that reject the null hypothesis. In conclusion, we prefer the model 1 does not fits.
+
 
