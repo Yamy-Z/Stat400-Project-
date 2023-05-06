@@ -1,7 +1,7 @@
 ---
-title: "Project_04_24"
+title: "GLM_MLM_FINAL"
 author: "Erik Ketterer, Sagan Kakkar, Yamin Zhang, Yining Guan"
-date: "2023-04-06"
+date: "2023-05-02"
 output: html_document
 ---
 ```{r setup, include=FALSE}
@@ -11,6 +11,8 @@ knitr::opts_chunk$set(echo = TRUE)
 ## Load libraries
 ```{r}
 remove(list = ls())
+library(lme4)
+library(gridExtra)
 library(tidyverse)
 library(ggplot2)
 library(kableExtra)
@@ -18,7 +20,7 @@ library(dplyr)
 library(haven)
 ```
 
-# Part1 GML Regression
+# Part1 GML Regression Report
 
 ## Load data
 ```{r}
@@ -28,14 +30,14 @@ fertil2 <- read.csv("data.csv")
 ## Parameter fine-tuning
 This data was obtained by James Heakins, a former MSU undergraduate, for a project.  The original data comes from Botswana's 1988 Demographic and Health Survey. 
 
-The response variable/parameter of interest is 'children', the number of living children.  We are trying to predict the number of living children using the explanatory variables 'age', 'urban', 'educ', and 'usemeth', and whether this is an effective model of prediction.  
+The response variable/parameter of interest is 'children', the number of living children.  We are trying to predict the number of living children using the explanatory variables 'age', 'urban', 'educ', 'agefm' and 'usemeth', and whether this is an effective model of prediction.  
 
-We want to estimate 'children' by:
-  'age', which is the current age in years of mother, 
-  'urban', which is 1 if mother lives in urban area, 0 if not
-  'educ', which is the number of years of education the mother has
-  'usemeth', which is 1 if the mother has ever used birth control and 0 otherwise.
-  'agefm', which is age of mother at first marriage.
+We want to estimate 'children' by:  
+  'age', which is the current age in years of mother,   
+  'urban', which is 1 if mother lives in urban area, 0 if not  
+  'educ', which is the number of years of education the mother has  
+  'usemeth', which is 1 if the mother has ever used birth control and 0 otherwise.  
+  'agefm', which is age of mother at first marriage.  
   
 The variables 'age', 'education' and 'agefm' are numerically meaningful, while 'urban' and 'usemeth' are binary.
 
@@ -44,24 +46,30 @@ The variable 'usemeth', and 'agefm' has 2332 NA values in total, which we will o
 The data are available at website: [Data Resource](https://justinmshea.github.io/wooldridge/reference/fertil2.html#source)
   
 ```{r}
+# select data based on our research question
 selectData <- fertil2 %>%
   select(children, age, urban, educ, usemeth, agefm) %>%
   na.omit()
+#glimpse of data
 head(selectData)
 str(selectData)
 ```
-## Reseach question
-### Question 1  
-Is the model using parameters 'agefm', 'edu', and 'usemeth' to predict the response variable 'children' efficient?  
-### Question 2  
-Is the model using parameters 'age', 'edu', and 'urban' to predict the response variable 'children' efficient?  
-### Question 3
+## Research question  
+### Question 1    
+Is the model using parameters 'agefm', 'edu', and 'usemeth' to predict the response variable 'children' efficient?    
+   
+### Question 2    
+Is the model using parameters 'age', 'edu', and 'urban' to predict the response variable 'children' efficient?
+
+
+###  Question 3      
 Which model is better?
+
 
 ## EDA
 
-### univariant
-* "children'
+### Univariate Analysis
+* 'children'
 ```{r}
 ggplot(data = selectData, mapping = aes(x = children)) +
   geom_histogram(binwidth = 1, fill = "white", color = "black") +
@@ -79,7 +87,7 @@ ggplot(data = selectData, mapping = aes(x = age)) +
        y = "Count")
 ```
 
-From graph above, the age of mothers seems like to follow normal distribution even if there is a tail on the right side.  
+From graph above, the age of mothers seems like to follow normal distribution even if there is a tail on the right side. The mean of mothers' age is around 30.
 
 * "urban"
 ```{r}
@@ -87,16 +95,13 @@ ggplot(data = selectData, mapping = aes(x = urban)) +
   geom_bar(fill = "white", color = "black") +
   labs(x = "Is Urban",
        y = "Count")
-
 #Find the counts of each urban type
 table(selectData$urban)
-
 #Find the proportion for urban
 prop.table(table(selectData$urban))
-
 ```
 
-From the plot and the table above, the number of mothers living in urban area is pretty close to the number of mothers who do not live in urban area.
+From the plot and the table above, the number of mothers living in urban area is pretty close to the number of mothers who do not live in urban area.  There are 1096 mothers (p = .54) in urban areas and 933 mothers (p = .46) living in other areas.
 
 * "educ'
 ```{r}
@@ -106,7 +111,7 @@ ggplot(data = selectData, mapping = aes(x = educ)) +
        y = "Count")
 ```
 
-From the graph, we can see that there are two values (educ=0 and educ=7) in education appearing to be significant large, which means the most of women in Africa have no education or just elementary education.
+From the graph, we can see that there are two values (educ=0 and educ=7) in education appearing to be significant large, which means the most of women in Botswana have no education experience or just elementary education experience.
 
 * "usemeth"
 ```{r}
@@ -114,17 +119,13 @@ ggplot(data = selectData, mapping = aes(x = usemeth)) +
   geom_bar(fill = "white", color = "black") +
   labs(x = "Is Usemeth",
        y = "Count")
-
 #Find the counts of usemeth
-table(selectData$urban)
-
-
+table(selectData$usemeth)
 #Find the proportion for each usemeth type
-prop.table(table(selectData$urban))
-
+prop.table(table(selectData$usemeth))
 ```
 
-From graph, there seems like a big difference in the number of mother using birth control and the number of mother that does not use birth control.However, in the table we can see that the difference is not significant.
+From the table and graph, we can see that the number of mothers who use birth control is about twice that of not; 1323 (p = 0.65) compared to 706 who do not (p = .35).
 
 * "agefm'
 ```{r}
@@ -134,9 +135,9 @@ ggplot(data = selectData, mapping = aes(x = agefm)) +
        y = "Count")
 ```
 
-From the graph, the age of first marriage follows normal distribution with mean at 20 and it's right skewed.
+From the graph, the age of first marriage approximately follows normal distribution with mean at 20, and it seems to be a little right skewed.
 
-### multivariant
+### Multivariate Analysis
 
 ```{r}
 ggplot(data = selectData, aes(x = age, y = children)) + geom_point() + geom_smooth(method = "lm") + labs(x = "Current Age of Mother", y = "Numbers of Living Children", title = "Relationship between Children and Age")
@@ -148,17 +149,16 @@ According to the graph, from the smooth line, we can see that the relationship b
 ggplot(data = selectData, aes(x = educ, y = children)) + geom_point() + facet_grid(.~ urban)+ geom_smooth(method = "lm") + labs(x = "The Years of Education that mother had", y = "Numbers of Living Children", title = "Relationship between Education and Children")
 ```
 
-According to the graph above, we can see that the the smooth line here is negatively, which mean the relationship between `educ` and `children` is negatively related no matter the mother lived in the urban area or not. In that case, we can say that as the education that the mother had increase, we expect the number of living children that she had decrease.
+According to the graph above, we can see that the the smooth line here is negative treding, which means the relationship between `educ` and `children` is negatively related no matter if the mother lived in the urban area or not. In that case, we can say that as the education that the mother has increases, we expect the number of living children that she has to decrease.
 
 ```{r}
 ggplot(data = selectData, aes(x = agefm, y = children)) + geom_boxplot() + facet_grid(. ~ usemeth) + labs(x = "Mother's age at first marriage", y = "Number of Living Children", title = "Relationship between children and age of first marriage")
 ```
 
-According to the plot above, we can see that the mean numbers of living children that a mother had is roughly same no matter she had ever uses the birth control or not. But the highest number of children that a mother had is come from the group that never uses the birth control. What's more, the range of the numbers of living children is wider in the group that never uses the birth control, which I think we can say the mothers who had used birth control were more in control of their desired number of children.
+According to the plot above, we can see that the mean numbers of living children that a mother had is roughly same no matter she had ever uses the birth control or not. But the highest number of children that a mother comes from the group that never uses the birth control. What's more, the range of the numbers of living children is wider in the group that never uses the birth control, which I think we can say the mothers who had used birth control were more in control of their desired number of children.
 
 
-
-## Assumption
+## Assumptions
 
 ## Model 1
 
@@ -166,7 +166,7 @@ According to the plot above, we can see that the mean numbers of living children
 Our response variable is the number of children each mother has. It’s a count value and it can be described by a Poisson Process. From the children data above, it follows right skewed normal distribution, so this also shows it's a Poisson Response.
 
 ### Independence
-In our project, each observation is a mother, so it is reasonable to assume that each observation is independent to each other.
+In our project, each observation is a different mother, so it is reasonable to assume that each observation is independent to each other.
 
 ### Mean = Variance
 
@@ -189,9 +189,8 @@ table1chp4<- educGrps  %>% group_by(cuts)  %>%
   summarise(mnNum= mean(children),varNum=var(children),n=n())
 kable(table1chp4, booktabs=T, 
       caption="Compare mean and variance of number of children within each education group.",
-      col.names = c("Age Groups", "Mean", "Variance", "n")) %>%
+      col.names = c("Educ Groups", "Mean", "Variance", "n")) %>%
   kable_styling(full_width = F)
-
 ```
 
 
@@ -215,9 +214,8 @@ table1chp4<- agefmGrps  %>% group_by(cuts)  %>%
   summarise(mnNum= mean(children),varNum=var(children),n=n())
 kable(table1chp4, booktabs=T, 
       caption="Compare mean and variance of number of children within each age group.",
-      col.names = c("Educ Groups", "Mean", "Variance", "n")) %>%
+      col.names = c("Age Groups", "Mean", "Variance", "n")) %>%
   kable_styling(full_width = F)
-
 ```
 
 
@@ -238,10 +236,10 @@ kable(table1chp4, booktabs=T,
       caption="Compare mean and variance of number of children within each group.",
       col.names = c("Usemeth Groups", "Mean", "Variance", "n")) %>%
   kable_styling(full_width = F)
-
 ```
 
-* Summary: By looking at the data, some of the graph have too few data to show its distribution, so we don't know if it will follow normal distribution as desired. From the table, we can see that some means and variance are not the same, which means the overdispersion might be a problem.
+
+By looking at the data, some of the graph have too few data to show its distribution, so we don't know if it will follow normal distribution as desired. From the table, we can see that some means and variance are not the same, which means the overdispersion might be a problem.
 
 
 ### Linearity
@@ -251,7 +249,7 @@ model2 <- glm(children ~ agefm +educ+usemeth, family = 'poisson', data = selectD
 plot(model2, which = 1)
 ```
 
-From residuals vs. fitted graph, we can see that the fitted line is linear, which means the assumption of linearity is met.
+From residuals vs. fitted graph, we can see that the fitted line is about horizontal line around x axis, which means the assumption of linearity is met.
 
 ### Model 2
 
@@ -282,9 +280,8 @@ table1chp4<- educGrps  %>% group_by(cuts)  %>%
   summarise(mnNum= mean(children),varNum=var(children),n=n())
 kable(table1chp4, booktabs=T, 
       caption="Compare mean and variance of number of children within each education group.",
-      col.names = c("Age Groups", "Mean", "Variance", "n")) %>%
+      col.names = c("Educ Groups", "Mean", "Variance", "n")) %>%
   kable_styling(full_width = F)
-
 ```
 
 * 'age'
@@ -329,11 +326,10 @@ kable(table1chp4, booktabs=T,
       caption="Compare mean and variance of number of children within each group.",
       col.names = c("Urban Groups", "Mean", "Variance", "n")) %>%
   kable_styling(full_width = F)
-
 ```
 
 
-* Summmary: From the graphs and tables, the mean and variance is not eactly the same for some group of data. Therefore, we need to check the overdispersion problem for this model too.
+From the graphs and tables, the mean and variance is not eactly the same for some group of data. Therefore, we need to check the overdispersion problem for this model too.
 
 
 ### Linearity
@@ -357,7 +353,7 @@ model2 <- glm(children ~ age + educ + urban, family = poisson, data = selectData
 summary(model2)
 ```
 
-According to the summary of two models above, we can see that the AIC value for model 2 is relatively low, so here we need to choose the model 2 (represent the first research question). We cannot use the drop-in-deviance method here because these two models are not nested.
+According to the summary of two models above, we can see that the AIC value for model 2 is relatively low, so here we choose the model 2 as a better predictor for the number of children. We cannot use the drop-in-deviance method here because these two models are not nested.
 
 ## Overdispersion
 
@@ -370,7 +366,7 @@ phat2 <- X2/model2$df.residual
 phat2
 ```
 
-Since mean and variance are not very equal as we shown before, the assumption may not very perfect in this. So we need to take the overdispersion into account. Since the value of two models' dispersion parameters are not greater than 1, so we don't have to use the quasipoisson in this case. 
+Since mean and variance are not very equal as we shown before, the assumption may not very perfect in this. So we need to take the overdispersion into account. Since the value of two models' dispersion parameters are not noticeably greater or less than 1, we don't have to use the quasipoisson in this case. 
 
 ## Goodness of fit test (model 2)
 
@@ -384,7 +380,7 @@ pvalue <- 1-pchisq(X3, df)
 pvalue
 ```
 
-We have hypothesis: H0: the model 2 fits , H1: the model 2 does not fit. Since the p-value I get is 0.99, which is relatively high value, in that case we are fail to reject the null hypothesis. In conclusion, according to the p-value we calculated, we prefer the model 2 fits.
+We have hypothesis: $H_0$: the model 2 fits, $H_a$: the model 2 does not fit. Since the p-value I get is 0.99, which is relatively high value, in that case we are to fail to reject the null hypothesis. In conclusion, according to the p-value we calculated, we say that the model 2 fits.
 
 ## Goodness of fit test (model 1)
 
@@ -396,6 +392,386 @@ pvalue2 <- 1-pchisq(X4,df2)
 pvalue2
 ```
 
-We have hypothesis: H0: the model 1 fits, H1: the model 1 does not fit. Since the p-value is 0, which is very small, in that case we have evidence that reject the null hypothesis. In conclusion, we prefer the model 1 does not fits.
+We have hypothesis: $H_0$: the model 1 fits, $H_a$: the model 1 does not fit. Since the p-value is 0, which is very small, in that case we have enough evidence to reject the null hypothesis. In conclusion, we say the model 1 does not fit.
 
+## Conclusion
+
+To recap:
+
+### Question 1  
+Is the model using parameters 'agefm', 'educ', and 'usemeth' to predict the response variable 'children' efficient?  
+
+Model one displays this outlook. The model is not appropriate to predict the children response variable based on the goodness-of-fit test, as we find a p-value equal to zero and reject the notion that the model fits.
+
+### Question 2  
+Is the model using parameters 'age', 'educ', and 'urban' to predict the response variable 'children' efficient?  
+
+Model two displays this outlook. This model is appropriate to predict the children response variable based on the goodness-of-fit (Chi-Squared) test, as we find a p-value nearly equal to one and fail to reject the notion that the model fits.
+
+### Question 3
+Which model is better?
+
+In terms of AIC values, we compare model 1 and model 2 for the lower value.  In this comparison, we find that the AIC for model one (AIC = 8649) is much higher than that of model two (AIC = 7898.2).  We deduct that model two is more effective in predicting the response variable 'children', similar to findings above.
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+# Multilevel Modeling Report
+
+# About data
+The dataset we are going to use was created by the people over at the UCLA Institute for Digital Research and Education (IDRE). 
+
+The dataset measures schools and teachers, as well as students. The researchers are interested in how the organizational structure of schools influences the performance of students, or how teacher characteristics such as experience, IQ, or teaching style have an impact on student learning.
+
+Therefore, the level 1 observational unit is each student, and level 2 observational unit is school.
+
+# Load data
+```{r}
+Multidata <- read_dta("https://stats.idre.ucla.edu/stat/examples/imm/imm23.dta")
+```
+
+# Research Question
+
+Research Question 1: Does the time spent on homework each week affect a student's math score?
+
+Research Question 2: Does time spent doing homework and the type of school (private or public) affect math scores?
+
+# Parameter of Interest and Fixed Effect/Random Effect
+
+Therefore, the parameters we will use are 'homework' (time spent on homework each week) and 'public' (1=public school, 0 = others). And our response variable is 'math' (math score for each student).
+
+Fixed effects are the time spent on their homework and the type of school.
+
+Random effect is the school, indicated by 'schid' (school ID).
+
+## Parameter fine-tuning
+We are not going to do any parameter tuning here, due to variables of interest having being already organized as indicators.
+```{r}
+head(Multidata)
+str(Multidata)
+```
+
+# Exploratory Data Analysis 
+
+## Univariate Plots
+
+```{r}
+Multidata %>%
+  summarize(overallmean = mean(math, na.rm = TRUE),
+            overallsd = sd(math, na.rm = TRUE))
+math_all <- ggplot(data = Multidata, mapping = aes(x = math)) +
+  geom_histogram(binwidth = 3, fill = "navy", color = "white") +
+  labs(x = "Math Score",
+       y = "Number of Students") 
+math_all
+```
+
+Based on the graph above, the distribution of math scores is approximately normal. The data is roughly symmetric about a score of 51.  We can see that the majority of scores are between 41 and 64.
+
+
+```{r}
+math_agg <- Multidata %>%
+  group_by(schid) %>%
+  summarize(mean = mean(math, na.rm = TRUE),
+            sd = sd(math, na.rm = TRUE)) %>%
+  ggplot(mapping = aes(x = mean)) +
+     geom_histogram(binwidth = 2, fill = "navy", color = "white") +
+     labs(x = "Mean Math Score",
+          y = "Number of Schools") 
+math_agg
+```
+
+Similar to the previous graph, the distribution of mean math scores per school is nearly normal; it is roughly symmetric around a score of 50. It seems that the majority of mean scores are between 45 and 57.
+
+```{r}
+# Plot with both univariate figures
+grid.arrange(math_all,math_agg,ncol=1)
+```
+
+
+```{r}
+# Changing indicator variable to text
+Multidata <- Multidata%>%
+    mutate(SchoolType = ifelse(public == 1, "Public", "Private"))
+data_lev2 <-
+  Multidata %>%
+  group_by(schid) %>%
+  filter(row_number() == 1)
+# Creating proportions and table
+table(data_lev2$SchoolType)
+prop.table(table(data_lev2$SchoolType))
+# Plot
+inst <- ggplot(data = data_lev2, mapping = aes(x = SchoolType)) +
+  geom_bar(fill = "navy", color = "white") +
+  labs(x = "Type of School (Private vs Public)",
+       y = "Frequency")
+inst
+```
+
+The proportions and chart above show that private schools have a lesser frequency (n = 8, p = 0.35) than public schools (n = 17, p = 0.65) and because of this the results may not be fully representative of the population. 
+
+
+```{r}
+hwAll <- ggplot(data = Multidata, mapping = aes(x = homework)) +
+  geom_histogram(binwidth = 1, fill = "navy", color = "white") +
+  labs(x = "Time Spent on Homework (0-7)",
+       y = "Number of Students") 
+hwAll
+```
+
+The graph above shows a strong right skew. We note that most students spend an hour on homework each week. 
+
+# Bivariate Plots
+
+```{r}
+bp <- ggplot(data = Multidata, mapping = aes(y = math)) +
+  geom_boxplot(fill = "navy", color = "black") +
+  labs(y = "Math Scores") +
+  facet_grid(. ~SchoolType)
+bp
+```
+
+The spread of the private vs public math scores and the number of students is about the same for both types of schools, with the median for private schools (median = 59) being noticeable higher than that for public (median = 47) schools, so students in private schools have better math scores overall. 
+
+```{r}
+plot <- ggplot(data = Multidata, mapping = aes(y = math, x = homework))+
+  geom_point()+
+  geom_smooth(method = "lm", se = F) +
+  labs(x = "Time Spend on Homeworl",
+       y = "Math score")
+plot
+```
+
+We can assume linearity between amount of time spent on homework and math scores based on the graph above.  There is a clear positive linear trend displayed by the blue line. This means that the more time students spend on their homework, the higher scores the will get.
+
+Lattice Plot:
+
+```{r}
+ggplot(Multidata,aes(x=homework,y=math,color = SchoolType)) +
+  geom_point() + geom_smooth(method="lm",color="black") +
+  facet_wrap(~schid,ncol=5) +  
+  theme(strip.text.x=element_blank())  +
+  labs(x="Time Spent on Homework (Hours)",y="Math Scores")
+```
+
+Similar evidence of linearity to the above plot shown in these individual plots per school.  These plots also show that private schools have higher math scores on average than do public.
+
+
+## Model Building
+
+### Unconditional means model; which we will call Model_a (This is the model with no covariates and random intercepts only.) Model_a is given below:
+
+$$\text{Level 1: } Y_{ij} = a_i + \epsilon_{ij} \text{ where } \epsilon_{ij} \sim N(0, \sigma^2)$$
+
+$$\text{Level 2: } a_i = \alpha_0 + u_i \text{ where } u_i \sim N(0, \sigma_u^2)$$
+
+Composite model:
+
+$$\text Y_{ij} = \alpha_0 + u_i + \epsilon_{ij} \text{ where } \epsilon_{ij} \sim N(0, \sigma^2) \text{, } u_i \sim N(0, \sigma_u^2)$$
+
+
+```{r}
+model_a <- lmer(math ~ 1 + (1|schid), REML = F, data = Multidata)
+summary(model_a)
+coef(model_a)
+```
+
+#### Intraclass Correlation Coefficient
+
+```{r}
+rho <- (24.85)/(24.85+81.24)
+rho
+```
+
+About 23.4% of the total variability in math scores is due to differences between schools.  This value being above 10% (or rho = 0.10) gives us evidence to use a multilevel modeling technique. Therefore it is good that we decided to use the multileveling model for our research question(s).  
+
+### Model 1: Add homework as a level 1 covariate
+
+$$\text{Level 1: } Y_{ij} = a_i + b_{i}x_{i,homework} + \epsilon_{ij} \text{ where } \epsilon_{ij} \sim N(0, \sigma^2)$$
+
+$$\text{Level 2: } a_i = \alpha_0 + u_i $$
+$$b_i = \beta_0 + v_i \\ \text{ where } \begin{bmatrix} u_i \\ v_i \end{bmatrix} \sim N(\begin{bmatrix} 0 \\ 0 \end{bmatrix}, \begin{bmatrix} \sigma_u^2 \\ \rho\sigma_u\sigma_v & \sigma_v^2 \end{bmatrix})$$
+
+Composite model:
+
+$$\text Y_{ij} = \alpha_0 + \beta_0x_{i,homework} + u_i + v_ix_{i,homework}+ \epsilon_{ij} \text{ where } \epsilon_{ij} \sim N(0, \sigma^2) \text{, } \begin{bmatrix} v_i \\ u_i \end{bmatrix} \sim N(\begin{bmatrix} 0 \\ 0 \end{bmatrix}, \begin{bmatrix} \sigma_u^2 \\ \rho\sigma_u\sigma_v & \sigma_v^2 \end{bmatrix})$$
+
+```{r}
+model1 <- lmer(math ~ homework + (1+homework|schid), REML = F, data = Multidata)
+summary(model1)
+coef(model1)
+```
+
+$$ \hat{\alpha_0} = 46.32 = \text{the mean math score when the time spent on homework is zero hours   } $$
+
+$$ \hat{\beta_0} = 1.99 = \text{the mean change in math score when the time spent on homework increases by one hour } $$
+$$ \hat{\sigma}^2 = 53.30 = \text{the variance in math score in within school deviations } $$ 
+$$ \hat{\sigma_u}^2 = 59.28 = \text{the variance in math score in between-school deviations when the time spent on homework is zero hour } $$
+$$ \hat{\sigma_v}^2 = 16.79 = \text{the variance in math score in between-school deviations as the time spent on homework increases by one hour } $$
+
+The model output and analysis following here show that homework is a good level 1 covariate.  We note that for homework, |t| value is above the threshold of 2:
+
+t =  2.193
+
+R output does not provide p-values because there are varying degrees of freedom, so for |t| > 2, we say that homework is a significant predictor of math score in this multilevel model.
+
+### Model 2: Adding a level 2 covariate of 'public' to model 1
+
+$$\text{Level 1: } Y_{ij} = a_i + b_{i}x_{i,homework} + \epsilon_{ij} \text{ where } \epsilon_{ij} \sim N(0, \sigma^2)$$
+
+$$\text{Level 2: } a_i = \alpha_0 + \alpha_{1}x_{i,public} + u_i $$
+$$b_i = \beta_0 + \beta_{1}x_{i,public} + v_i \\ \text{ where } \begin{bmatrix} u_i \\ v_i \end{bmatrix} \sim N(\begin{bmatrix} 0 \\ 0 \end{bmatrix}, \begin{bmatrix} \sigma_u^2 \\ \rho\sigma_u\sigma_v & \sigma_v^2 \end{bmatrix})$$
+
+Composite model:
+
+$$\text Y_{ij} = [\alpha_0 + \alpha_{1}x_{i,public} + \beta_0x_{i,homework} + \beta_{1}x_{i,public}x_{i,homework}] + [u_i + v_ix_{i,homework}+ \epsilon_{ij} \text{ where } \epsilon_{ij}] \sim N(0, \sigma^2) \text{, } \begin{bmatrix} v_i \\ u_i \end{bmatrix} \sim N(\begin{bmatrix} 0 \\ 0 \end{bmatrix}, \begin{bmatrix} \sigma_u^2 \\ \rho\sigma_u\sigma_v & \sigma_v^2 \end{bmatrix})$$
+
+```{r}
+model2 <- lmer(math ~ homework + public + public:homework + (1+homework + public|schid), REML = F, data = Multidata)
+summary(model2)
+coef(model2)
+```
+
+### Model 2: Reducing Complexity 
+
+We reduce the complexity of the model above by taking out the level two error term.
+$$\text v_i $$
+By taking out the level two error term, we take out the randomness of the 'public' variable (see R output for coef(model2.reduced) below). 
+
+We also removed the interaction term between public and homework for model for simplicity.  This may improve significance results.
+
+These two actions solve the issue we were having with model two above.
+
+$$\text{Level 1: } Y_{ij} = a_i + b_{i}x_{i,homework} + \epsilon_{ij} \text{ where } \epsilon_{ij} \sim N(0, \sigma^2)$$
+
+$$\text{Level 2: } a_i = \alpha_0 + \alpha_{1}x_{i,public} + u_i $$
+$$b_i = \beta_0 + \beta_{1}x_{i,public} \text{ where } u_i \sim N(0, \sigma_u^2)$$
+
+Composite model:
+
+$$\text Y_{ij} = [\alpha_0 + \alpha_{1}x_{i,public} + \beta_0x_{i,homework} ] + [u_i + \epsilon_{ij}] \text{ where } \epsilon_{ij} \sim N(0, \sigma^2) \text{, } u_i \sim N(0, \sigma_u^2))$$
+
+```{r}
+model2.reduced <- lmer(math ~ homework + public + (1 + homework|schid), REML = F, data = Multidata)
+summary(model2.reduced)
+coef(model2.reduced)
+```
+
+$$ \hat{\alpha_0} = 49.07 = \text{the mean math score when the time spent on homework is zero hours {homework = 0} for private schools {public = 0}  } $$
+$$ \hat{\alpha_1} = -4.08 = \text{the mean math score for public {public = 1} schools compared to private {public = 0} schools, controlling for the effects of time spent on homework } $$
+$$ \hat{\beta_1} = 1.98 = \text{the mean change in math score when time spent on homework increases by one hour, controlling for the effects of school type } $$
+The first note of this model is that there are no issues in complexity for computing the model in R.  We also note that both for homework and public, |t| values  are above the threshold of 2:
+
+homework: t = 2.213
+public: t =  -2.154
+
+Again, with the absence of p-values, we generally accept |t| > 2 as significant in multilevel modeling.  This gives evidence that our model2.reduced is likely a good model build to predict math score based on the time spent on homework and school type.
+
+To properly test the nested models, the models should have corresponding levels of complexity.  This should not be an issue because we eliminated error from the 'public' variable.  
+
+
+## Model Comparisons
+
+### Drop-in-Deviance Tests
+
+Hypotheses:
+
+Null: Model 1, including homework as the only covariate, is preferred to Model 2
+
+$$ \alpha_{1}x_{i,public} = 0$$
+
+Alternative: Model 2, including homework and public (binary for private or public school) is preferred to Model 1.
+
+$$ \alpha_{1}x_{i,public} \neq 0$$
+
+
+```{r}
+# Both models need same variance structure to use a drop-in-deviance test
+# We add the variance term associated with public in order to account for this
+model2.reducedI <- lmer(math ~ homework + public + (1 + homework + public|schid), REML = F, data = Multidata)
+# Drop-in-deviance
+anova(model1, model2.reducedI, test = "Chisq")
+# The code may generate a warning due to the complexity of the models being compared
+```
+
+Test Statistic: 9.0584
+P-value:        0.0597
+Decision:   Fail to reject null hypothesis
+Conclusion: The model with homework and public is shown to not be significantly better than the model with only homework. Due to this, the model with just homework is preferred.
+
+NOTE: This warning is due to the complexity of the model.  When interpreting results, it is important to take this into account.  We wanted to provide a test where the models had the same level of complexity.  Below, we do a drop-in-deviance test where there are no R-presented issues, but the levels of complexity differ between the models.
+
+```{r} 
+# Testing without accounting for complexity (similar to online book notes 8.6.2)
+coef(model1)
+coef(model2.reduced)
+# Drop-in-deviance
+anova(model1, model2.reduced, test = "Chisq")
+```
+
+Test Statistic: 4.1955
+P-value:        0.04053
+Decision:   Reject null hypothesis
+Conclusion: The model with homework and public is shown in this test to be significantly better than the model with only homework. Due to this, the model with homework and public is preferred.
+
+### AIC Comparison
+```{r}
+summary(model1)
+summary(model2.reduced)
+```
+
+AIC and BIC are model comparison values used when models are not able to be compared in other ways.  The summaries' above show that the model 1 AIC (AIC = 3651.0) is slightly higher than that of model 2 (AIC = 3648.8). But, the BIC for model 1  (BIC = 3676.5) is slightly lower than that of model 2 (BIC = 3678.6 ).  This is likely because BIC punishes for addition of parameters more so than does AIC.  
+
+Because AIC/BIC give conflicting answers to preferred model, it is best to assume the model with less parameters is better.  We therefore deduct that model 1 is preferred to model 2 in AIC/BIC comparison.
+
+# Model Analysis
+
+## Goodness of fit
+
+```{r}
+# We will perform a goodness of fit test for Model2.reducedI 
+ts <- sum(residuals(model2.reducedI, type = "pearson")^2)
+pval <- 1-pchisq(ts, 518)
+ts
+pval
+```
+
+Hypothesis:
+
+Null: The model fits   
+Alternative: The model does not fit    
+    
+Test Stat-Chi square: 25734.71   
+P-value: 0    
+Conclusion: Based on the large test statistic and small p-value we can conclude that the model with homework and public and both variance terms does not fit.
+
+
+```{r}
+# Goodness of fit test for model 1
+ts <- sum(residuals(model1, type = "pearson")^2)
+pval <- 1-pchisq(ts, 518)
+ts
+pval
+```
+
+Hypothesis:
+
+Null: The model fits  
+Alternative: The model does not fit  
+
+Test Stat-Chi square: 25533.57  
+P-value: 0    
+Conclusion: Based on the large test statistic and small p-value we can conclude that the model with homework and a homework variance term does not fit.   
+
+
+## Conclusion in Context
+
+The research questions stated at the beginning are repeated below for convenience:
+
+Research Question 1: Does the time spent on homework each week affect a student's math score?
+
+The answer to research question 1 can be evaluated using AIC as a comparison metric. The AIC for model 1, the model which has only homework as the predictor for math, is 3651.0. The AIC for model2 is 3651.9 and that for model2.reduced is 3648.8. Based on this, it can be seen that the model with homework as a predictor is as good as models with public and an interaction term, based on AIC. 
+
+Research Question 2: Does time spent doing homework and the type of school (private or public) affect math scores??
+
+The answer to the second research question is simply no. The AIC for the model with homework and that for the model with homework and public have similar AIC values which means that they perform relativity similarly. Further, the goodness-of-fit test for this model does not give evidence that the model fits to predict the variable of interest, 'math'.
 
